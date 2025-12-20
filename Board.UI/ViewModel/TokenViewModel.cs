@@ -1,7 +1,8 @@
 using System;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Windows.Media;
+using Microsoft.UI;
+using Microsoft.UI.Xaml.Media;
 using Board.Domain;
 using ReactiveUI;
 
@@ -9,6 +10,10 @@ namespace Board.UI.ViewModel;
 
 public sealed class TokenViewModel : ReactiveObject
 {
+    private static readonly SolidColorBrush RoyalBlueBrush = new(Windows.UI.Color.FromArgb(255, 65, 105, 225));
+    private static readonly SolidColorBrush YellowBrush = new(Colors.Yellow);
+    private static readonly SolidColorBrush RedBrush = new(Colors.Red);
+
     private readonly ObservableAsPropertyHelper<Brush> _tokenBrush;
 
     private readonly ObservableAsPropertyHelper<bool> _tokenReserved;
@@ -30,11 +35,11 @@ public sealed class TokenViewModel : ReactiveObject
         // TokenBrush derives from Color changes
         _tokenBrush = tokenObservable
             .Select(token => token.Match(
-                onEmpty: _ => Brushes.RoyalBlue,
+                onEmpty: _ => (Brush)RoyalBlueBrush,
                 onPlaced: placedToken => placedToken.Color switch
                 {
-                    TokenColor.Yellow => Brushes.Yellow,
-                    TokenColor.Red => Brushes.Red,
+                    TokenColor.Yellow => YellowBrush,
+                    TokenColor.Red => RedBrush,
                     _ => throw new NotImplementedException(),
                 }))
             .ToProperty(this, tvm => tvm.TokenBrush, scheduler: RxApp.MainThreadScheduler);

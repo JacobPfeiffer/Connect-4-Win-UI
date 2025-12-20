@@ -1,17 +1,26 @@
 ﻿using Board.Domain;
 using Board.UI.ViewModel;
-using System.Windows;
+using Microsoft.UI.Xaml;
 
 namespace ConnectFour;
 
 /// <summary>
-/// Interaction logic for ConnectFourWindow.xaml
+/// Main window for Connect Four game
 /// </summary>
-public partial class ConnectFourWindow : Window
+public sealed partial class ConnectFourWindow : Window
 {
     public ConnectFourWindow(BoardViewModel boardViewModel)
     {
-        InitializeComponent();
-        DataContext = boardViewModel;
+        this.InitializeComponent();
+        
+        // Set the window size
+        var appWindow = this.AppWindow;
+        appWindow.Resize(new Windows.Graphics.SizeInt32(600, 650));
+        
+        // Set DataContext on the root content
+        if (Content is FrameworkElement rootElement)
+        {
+            rootElement.DataContext = boardViewModel;
+        }
     }
 }

@@ -2,28 +2,38 @@
 using Board.IO.Services;
 using Board.UI.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
-using System.Windows;
+using Microsoft.UI.Xaml;
 
 namespace ConnectFour;
 
 /// <summary>
-/// Interaction logic for App.xaml
+/// Provides application-specific behavior to supplement the default Application class.
 /// </summary>
 public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
+    private Window? _window;
 
-    protected override void OnStartup(StartupEventArgs e)
+    /// <summary>
+    /// Initializes the singleton application object.
+    /// </summary>
+    public App()
     {
-        base.OnStartup(e);
+        this.InitializeComponent();
+    }
 
+    /// <summary>
+    /// Invoked when the application is launched.
+    /// </summary>
+    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    {
         var services = new ServiceCollection();
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
-        // Create and show the main window from DI
-        var connectFourWindow = _serviceProvider.GetRequiredService<ConnectFourWindow>();
-        connectFourWindow.Show();
+        // Create and activate the main window from DI
+        _window = _serviceProvider.GetRequiredService<ConnectFourWindow>();
+        _window.Activate();
     }
 
     private void ConfigureServices(IServiceCollection services)
@@ -39,15 +49,6 @@ public partial class App : Application
         // Register ViewModels
         services.AddTransient<BoardViewModel>();
         services.AddTransient<ConnectFourWindow>();
-    }
-
-    protected override void OnExit(ExitEventArgs e)
-    {
-        if (_serviceProvider is IDisposable disposable)
-        {
-            disposable.Dispose();
-        }
-        base.OnExit(e);
     }
 }
 

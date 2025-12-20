@@ -3,17 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ConnectFour" 
-        xmlns:view="clr-namespace:Board.UI.View;assembly=Board.UI"
+        xmlns:local="using:ConnectFour" 
+        xmlns:view="using:Board.UI.View"
         mc:Ignorable="d"
-        Title="BoardView" 
-        Background="RoyalBlue"
-        MinHeight="600" 
-        MinWidth="600"
-        Height="600" 
-        Width="600">
+        Title="Connect Four">
 
-    <Grid>
+    <Grid Background="#FF4169E1">
         <view:BoardView/>
     </Grid>
 </Window>

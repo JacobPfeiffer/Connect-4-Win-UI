@@ -3,13 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Board.UI.View" 
+        xmlns:local="using:Board.UI.View" 
         mc:Ignorable="d"
-        Background="RoyalBlue"
+        Background="#FF4169E1"
         MinHeight="600" 
-        MinWidth="600"
-        Height="600" 
-        Width="600">
+        MinWidth="600">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -29,7 +27,7 @@
             Grid.Row ="1" 
             FontSize="18"
             HorizontalAlignment="Center"
-            Text="{Binding ActivePlayerString, StringFormat='Active Player: {0}'}"/>
+            Text="{Binding ActivePlayerString}"/>
 
         <local:TokenView Grid.Row="2"/>
 

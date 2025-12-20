@@ -1,18 +1,15 @@
-﻿using Board.Domain;
-using Board.UI.ViewModel;
-using System.Windows;
-using System.Windows.Controls;
+﻿using Microsoft.UI.Xaml.Controls;
 
 namespace Board.UI.View;
 
 /// <summary>
-/// Interaction logic for BoardView.xaml
+/// Board view for Connect Four game
 /// </summary>
-public partial class BoardView : UserControl
+public sealed partial class BoardView : UserControl
 {
     public BoardView()
     {
-        InitializeComponent();
+        this.InitializeComponent();
         // DataContext is set by parent window or DI
     }
 }
