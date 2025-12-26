@@ -52,6 +52,7 @@ public partial class App : Application
             new BoardViewModel(
                 new ObservableCollection<BoardColumnViewModel>(
                     sp.GetRequiredService<BoardStateStoreService>().GetBoardState().BoardTokenState.GroupByColumns().Columns
+                        .OrderBy(kvp => kvp.Key.ColumnIndex)
                         .Select(kvp => 
                             new BoardColumnViewModel(
                                 new ObservableCollection<TokenViewModel>(

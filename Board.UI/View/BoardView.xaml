@@ -5,9 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="using:Board.UI.View" 
         mc:Ignorable="d"
-        Background="#FF4169E1"
-        MinHeight="600" 
-        MinWidth="600">
+        Background="#FF4169E1">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -27,6 +25,7 @@
 
         <TextBlock 
             Grid.Row ="0" 
+            Grid.ColumnSpan="7"
             FontSize="36"
             FontWeight="Bold"
             HorizontalAlignment="Center"
@@ -34,27 +33,32 @@
 
         <TextBlock 
             Grid.Row ="1" 
+            Grid.ColumnSpan="7"
             FontSize="18"
             HorizontalAlignment="Center"
             Text="{Binding ActivePlayerString}"/>
 
-        <ItemsControl 
+        <Border 
             Grid.Row="2"
             Grid.ColumnSpan="7"
+            BorderBrush="White" 
+            BorderThickness="2"
             HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            ItemsSource="{Binding BoardColumns}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" Spacing="10" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
+            VerticalAlignment="Center">
+            <ItemsControl 
+                ItemsSource="{Binding BoardColumns}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
 
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <local:BoardColumnView/>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <local:BoardColumnView/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
     </Grid>
 </UserControl>

@@ -12,16 +12,16 @@ public sealed partial class BoardColumnViewModel : ReactiveObject
 {
     public readonly TokenColumn Column;
 
-    public ObservableCollection<TokenViewModel> ColumnTokens { get; }
+    public ObservableCollection<TokenViewModel> TokensInColumn { get; }
 
-    public ReactiveCommand<BoardColumnViewModel, Unit> PlaceTokenCommand { get; }
+    public ReactiveCommand<Unit, Unit> PlaceTokenCommand { get; }
 
-    public BoardColumnViewModel(ObservableCollection<TokenViewModel> columnTokens, TokenColumn column, IObservable<Unit> ColumnFull, Action<BoardColumnViewModel> PlaceToken)
+    public BoardColumnViewModel(ObservableCollection<TokenViewModel> tokensInColumn, TokenColumn column, IObservable<Unit> ColumnFull, Action<BoardColumnViewModel> PlaceToken)
     {
         Column = column;
-        ColumnTokens = columnTokens;
+        TokensInColumn = tokensInColumn;
         PlaceTokenCommand = ReactiveCommand.Create(
-            PlaceToken,
+            () => PlaceToken(this),
             outputScheduler: RxApp.MainThreadScheduler);
         
     }    

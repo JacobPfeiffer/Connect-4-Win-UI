@@ -49,7 +49,7 @@ public static class BoardTokenStateExtensions
 {
     public static BoardTokenStateByColumn GroupByColumns(this BoardTokenState boardTokenState)
         => new (boardTokenState.BoardTokenLookup.GroupBy(kvp => kvp.Key.Column)
-            .ToDictionary(group => group.Key, group => group.OrderBy( key => key.Key.Row)));
+            .ToDictionary(group => group.Key, group => group.OrderBy(key => key.Key.Row.RowIndex)));
     
     public static bool IsColumnFull(this BoardTokenStateByColumn boardTokenStateByColumn, TokenColumn column)
         => boardTokenStateByColumn.Columns.TryGetValue(column, out var tokensInColumn) && tokensInColumn.Select(token => token.Value).All(tokenState => tokenState is PlacedTokenState);

@@ -15,7 +15,7 @@ public sealed partial class ConnectFourWindow : Window
         
         // Set the window size
         var appWindow = this.AppWindow;
-        appWindow.Resize(new Windows.Graphics.SizeInt32(600, 650));
+        appWindow.Resize(new Windows.Graphics.SizeInt32(625, 500));
         
         // Set DataContext on the root content
         if (Content is FrameworkElement rootElement)

@@ -3,11 +3,11 @@
 namespace Board.UI.View;
 
 /// <summary>
-/// Token view for Connect Four game
+/// Board column view for Connect Four game
 /// </summary>
-public sealed partial class TokenView : UserControl
+public sealed partial class BoardColumnView : UserControl
 {
-    public TokenView()
+    public BoardColumnView()
     {
         this.InitializeComponent();
     }

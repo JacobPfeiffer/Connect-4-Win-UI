@@ -10,8 +10,11 @@
       d:DesignHeight="450" d:DesignWidth="800">
 
     <Grid>
-        <Button Style="{StaticResource CircularButtonStyle}"
-            Background="Transparent">
+        <Button
+            Background="Transparent"
+            BorderThickness="0"
+            BorderBrush="Transparent"
+            Command="{Binding PlaceTokenCommand}">
             <ItemsControl 
                 Background="#FF708090"
                 HorizontalAlignment="Center"
@@ -19,7 +22,7 @@
                 ItemsSource="{Binding TokensInColumn}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <StackPanel Orientation="Vertical" Spacing="10" />
+                        <StackPanel Orientation="Vertical" Spacing="2"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
 
@@ -28,7 +31,6 @@
                         <Ellipse 
                             Width="60" 
                             Height="60" 
-                            Margin="5,5,5,5"
                             Fill="{Binding TokenBrush}"/>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
