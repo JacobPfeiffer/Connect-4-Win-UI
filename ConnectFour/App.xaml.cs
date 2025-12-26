@@ -1,4 +1,5 @@
-﻿using Board.Domain;
+﻿using System.Collections.ObjectModel;
+using Board.Domain;
 using Board.IO.Services;
 using Board.UI.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,7 +48,27 @@ public partial class App : Application
             sp.GetRequiredService<BoardStateStore>().GetService());
 
         // Register ViewModels
-        services.AddTransient<BoardViewModel>();
+        services.AddTransient<BoardViewModel>(sp => 
+            new BoardViewModel(
+                new ObservableCollection<BoardColumnViewModel>(
+                    sp.GetRequiredService<BoardStateStoreService>().GetBoardState().BoardTokenState.GroupByColumns().Columns
+                        .Select(kvp => 
+                            new BoardColumnViewModel(
+                                new ObservableCollection<TokenViewModel>(
+                                    kvp.Value.Select(token => 
+                                        new TokenViewModel(
+                                            token.Key, 
+                                            sp.GetRequiredService<BoardStateStoreService>().GetTokenObservable(token.Key)))), 
+                                kvp.Key, 
+                                sp.GetRequiredService<BoardStateStoreService>().ColumnFullObservable(kvp.Key),
+                                columnViewModel => 
+                                {
+                                    sp.GetRequiredService<BoardStateStoreService>().UpdateBoardStateBatch(
+                                        new PlaceToken(columnViewModel.Column),
+                                        new SwitchPlayer());
+                                }))),
+            sp.GetRequiredService<BoardStateStoreService>().PlayerChanged));
+
         services.AddTransient<ConnectFourWindow>();
     }
 }

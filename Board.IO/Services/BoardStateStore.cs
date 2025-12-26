@@ -27,6 +27,8 @@ public delegate void UpdateBoardStateBatchDelegate(params BoardStateTransition[]
 /// </summary>
 public delegate IObservable<TokenState> GetTokenObservableDelegate(TokenPosition position);
 
+public delegate IObservable<Unit> ColumnFullObservable(TokenColumn column);
+
 /// <summary>
 /// Thread-safe store for BoardState with Get and Update operations using explicit state transitions
 /// </summary>
@@ -36,7 +38,8 @@ public record BoardStateStoreService(
     GetBoardStateDelegate GetBoardState,
     UpdateBoardStateDelegate UpdateBoardState,
     UpdateBoardStateBatchDelegate UpdateBoardStateBatch,
-    GetTokenObservableDelegate GetTokenObservable);
+    GetTokenObservableDelegate GetTokenObservable,
+    ColumnFullObservable ColumnFullObservable);
 
 /// <summary>
 /// Implementation of thread-safe BoardState store using BehaviorSubject
@@ -72,7 +75,8 @@ public sealed class BoardStateStore : IDisposable
         GetBoardState: GetCurrentState,
         UpdateBoardState: UpdateBoardState,
         UpdateBoardStateBatch: UpdateBoardStateBatch,
-        GetTokenObservable: GetTokenObservable
+        GetTokenObservable: GetTokenObservable,
+        ColumnFullObservable: ColumnFullObservable
     );
 
     /// <summary>
@@ -118,12 +122,47 @@ public sealed class BoardStateStore : IDisposable
 
     /// <summary>
     /// Gets an observable that emits token state changes for a specific position.
-    /// Emits the current state immediately, then only when that token changes.
+    /// Emits at most twice:
+    /// - If initial state is Placed: emits once (the placed state)
+    /// - If initial state is Empty: emits twice (empty state first, then when it transitions to placed)
     /// </summary>
     public IObservable<TokenState> GetTokenObservable(TokenPosition position)
-        => _stateSubject
-            .Select(state => state.BoardTokenState[position])
-            .DistinctUntilChanged();
+        => Observable.Create<TokenState>(observable =>
+        {
+            var subscription = _stateSubject
+                .Select(state => state.BoardTokenState.BoardTokenLookup[position])
+                .DistinctUntilChanged()
+                .Subscribe(tokenState =>
+                {
+                    tokenState.Match(
+                     onEmpty: empty =>
+                     {
+                        observable.OnNext(empty);
+                     },
+                     onPlaced: placed =>
+                     {
+                        observable.OnNext(placed);
+                        observable.OnCompleted();
+                     });
+                });
+
+            return subscription;
+        });
+
+    public IObservable<Unit> ColumnFullObservable(TokenColumn column)
+        => Observable.Create<Unit>(observable =>
+        {
+            var subscription = _stateSubject.Select(state => state.BoardTokenState.GroupByColumns().IsColumnFull(column))
+                .DistinctUntilChanged()
+                .Where(isFull => isFull)
+                .Subscribe(_ =>
+                {
+                    observable.OnNext(Unit.Default);
+                    observable.OnCompleted();
+                });
+
+            return subscription;
+        });
 
     public void Dispose()
     {
