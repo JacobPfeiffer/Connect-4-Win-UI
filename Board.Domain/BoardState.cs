@@ -42,16 +42,29 @@ public static class ColoringStrategies
     public static ColoringStrategy Player1Yellow => player => player == Player.Player1 ? TokenColor.Yellow : TokenColor.Red;
 }
 
+public readonly record struct BoardTokenState(IReadOnlyDictionary<TokenPosition, TokenState> BoardTokenLookup);
+
+public readonly record struct BoardTokenStateByColumn(IReadOnlyDictionary<TokenColumn, IOrderedEnumerable<KeyValuePair<TokenPosition, TokenState>>> Columns);
+public static class BoardTokenStateExtensions
+{
+    public static BoardTokenStateByColumn GroupByColumns(this BoardTokenState boardTokenState)
+        => new (boardTokenState.BoardTokenLookup.GroupBy(kvp => kvp.Key.Column)
+            .ToDictionary(group => group.Key, group => group.OrderBy(key => key.Key.Row.RowIndex)));
+    
+    public static bool IsColumnFull(this BoardTokenStateByColumn boardTokenStateByColumn, TokenColumn column)
+        => boardTokenStateByColumn.Columns.TryGetValue(column, out var tokensInColumn) && tokensInColumn.Select(token => token.Value).All(tokenState => tokenState is PlacedTokenState);
+}
+
 public readonly record struct BoardState
 {
-    public IReadOnlyDictionary<TokenPosition, TokenState> BoardTokenState { get; init; }
+    public BoardTokenState BoardTokenState { get; init; }
 
     public Player CurrentPlayer { get; init; }
 
     public ColoringStrategy ColoringStrategy { get; init; }
 
     private BoardState(
-        IReadOnlyDictionary<TokenPosition, TokenState> boardTokenState, 
+        BoardTokenState boardTokenState, 
         Player currentPlayer, 
         ColoringStrategy coloringStrategy)
     {
@@ -71,15 +84,16 @@ public readonly record struct BoardState
         | 35 36 37 38 39 40 41 |
         ------------------------
     */
-    private static IReadOnlyDictionary<TokenPosition, TokenState> InitializeBoardStateClear()
-        => Enumerable.Range(0, (int)BoardConstants.NumCells)
+    private static BoardTokenState InitializeBoardStateClear()
+        => new(Enumerable.Range(0, (int)BoardConstants.NumCells)
             .Select(i => 
                 new TokenPosition(
                     new TokenRow((uint)(i / 7)), 
                     new TokenColumn((uint)(i % 7))))
             .ToDictionary(
                 key => key,
-                value => (TokenState)EmptyTokenState.Create(value));
+                value => (TokenState)EmptyTokenState.Create(value)));
+
     private static Player InitializePlayerStart()
         => Player.Player1;
 
@@ -89,7 +103,7 @@ public readonly record struct BoardState
     public static BoardState CreateCleanBoard(ColoringStrategy coloringStrategy) 
         => new(InitializeBoardStateClear(), InitializePlayerStart(), coloringStrategy);
 
-    public static BoardState CreateRestoredBoard(Func<(IReadOnlyDictionary<TokenPosition, TokenState>, Player, ColoringStrategy)> fetchPreviousState)
+    public static BoardState CreateRestoredBoard(Func<(BoardTokenState, Player, ColoringStrategy)> fetchPreviousState)
     {
         (var ts, var player, var coloringStrategy) = fetchPreviousState();
         return new(ts, player, coloringStrategy);
@@ -98,7 +112,7 @@ public readonly record struct BoardState
 
 public static class BoardStateExtensions
 {
-    public static BoardState WithBoardTokenState(this BoardState state, IReadOnlyDictionary<TokenPosition, TokenState> boardTokenState)
+    public static BoardState WithBoardTokenState(this BoardState state, BoardTokenState boardTokenState)
         => state with { BoardTokenState = boardTokenState };
 
     public static BoardState WithCurrentPlayer(this BoardState state, Func<Player, Player> updatePlayerFunc)
@@ -109,12 +123,12 @@ public static class BoardStateExtensions
     /// </summary>
     public static BoardState UpdateTokenAtPosition(this BoardState state, TokenPosition position, Func<TokenState, TokenState> updateFunc)
     {
-        var newTokens = state.BoardTokenState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        var newTokens = state.BoardTokenState.BoardTokenLookup.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         if (newTokens.TryGetValue(position, out var token))
         {
             newTokens[position] = updateFunc(token);
         }
-        return state.WithBoardTokenState(newTokens);
+        return state.WithBoardTokenState(new BoardTokenState(newTokens));
     }
 
     /// <summary>
@@ -125,7 +139,7 @@ public static class BoardStateExtensions
     {
         var color = coloringStrategy(state.CurrentPlayer);
         
-        var emptyToken = state.BoardTokenState
+        var emptyToken = state.BoardTokenState.BoardTokenLookup
             .Where(kvp => kvp.Key.Column.ColumnIndex == column.ColumnIndex)
             .OrderByDescending(kvp => kvp.Key.Row.RowIndex)
             .FirstOrDefault(kvp => kvp.Value is EmptyTokenState);

@@ -8,7 +8,7 @@ using ReactiveUI;
 
 namespace Board.UI.ViewModel;
 
-public sealed class TokenViewModel : ReactiveObject
+public sealed partial class TokenViewModel : ReactiveObject
 {
     private static readonly SolidColorBrush RoyalBlueBrush = new(Windows.UI.Color.FromArgb(255, 65, 105, 225));
     private static readonly SolidColorBrush YellowBrush = new(Colors.Yellow);
@@ -16,21 +16,17 @@ public sealed class TokenViewModel : ReactiveObject
 
     private readonly ObservableAsPropertyHelper<Brush> _tokenBrush;
 
-    private readonly ObservableAsPropertyHelper<bool> _tokenReserved;
-
     public Brush TokenBrush => _tokenBrush.Value;
 
-    public bool TokenReserved => _tokenReserved.Value;
-
-    public TokenPosition Position { get; }
-
+    public TokenPosition Position { get; private set; }
+    
     /// <summary>
     /// Creates a TokenViewModel with initial state and subscribes to updates from the observable.
     /// Accepts any TokenState to support restoring games with placed tokens.
     /// </summary>
-    public TokenViewModel(TokenState initialState, IObservable<TokenState> tokenObservable)
+    public TokenViewModel(TokenPosition position, IObservable<TokenState> tokenObservable)
     {
-        Position = initialState.Match(empty => empty.Position, placed => placed.Position);
+        Position = position;
 
         // TokenBrush derives from Color changes
         _tokenBrush = tokenObservable
@@ -43,12 +39,5 @@ public sealed class TokenViewModel : ReactiveObject
                     _ => throw new NotImplementedException(),
                 }))
             .ToProperty(this, tvm => tvm.TokenBrush, scheduler: RxApp.MainThreadScheduler);
-
-        // TokenReserved derives from Color changes
-        _tokenReserved = tokenObservable
-            .Select(token => token.Match(
-                onEmpty: _ => true,
-                onPlaced: _ => false))
-            .ToProperty(this, tvm => tvm.TokenReserved, scheduler: RxApp.MainThreadScheduler);
     }
 }
