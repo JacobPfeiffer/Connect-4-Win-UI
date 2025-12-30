@@ -12,19 +12,42 @@ public enum TokenColor
     Yellow
 }
 
-    /// <summary>
-/// Base type for token states. A token is either empty or placed.
+/// <summary>
+/// Base type for token states representing the lifecycle of a Connect Four token.
+/// 
+/// Token State Transitions:
+/// <code>
+///     ┌─────────┐
+///     │  Empty  │ ◄─────┐
+///     └────┬────┘       │
+///          │            │
+///          │ (hover)    │ (clear)
+///          │            │
+///          ▼            │
+///     ┌─────────┐       │
+///     │ Preview │───────┘
+///     └────┬────┘
+///          │
+///          │ (click)
+///          │
+///          ▼
+///     ┌─────────┐
+///     │ Placed  │ (terminal state)
+///     └─────────┘
+/// </code>
+/// 
 /// This sealed class hierarchy enforces at compile time that:
-/// - A token can only be in one of two states: Empty or Placed
-/// - Empty tokens cannot have a color
+/// - A token starts as Empty
+/// - Preview tokens can be shown during hover and cleared back to Empty
+/// - Placed tokens are the terminal state (no further transitions)
+/// - Empty and Preview tokens have no permanent color
 /// - Placed tokens must have a Red or Yellow color
-/// - Transitions only go from Empty → Placed
 /// </summary>
 public abstract record class TokenState;
 
 /// <summary>
 /// An empty token at a specific board position.
-/// Can be transitioned to PlacedTokenState via Place().
+/// Can be transitioned to a PreviewTokenState
 /// </summary>
 public sealed record class EmptyTokenState : TokenState
 {
@@ -38,6 +61,30 @@ public sealed record class EmptyTokenState : TokenState
     /// <summary>Creates an empty token at the given position.</summary>
     public static EmptyTokenState Create(TokenPosition position) => 
         new(position);
+
+    public static EmptyTokenState Create(PreviewTokenState previewToken) => 
+        new(previewToken.Position);
+}
+
+/// <summary>
+/// A preview token at a specific board position.
+/// Can be transitioned to PlacedTokenState via Place().
+/// </summary>
+public sealed record class PreviewTokenState : TokenState
+{
+    public TokenPosition Position { get; }
+
+    public TokenColor PreviewColor { get; }
+
+    private PreviewTokenState(TokenPosition position, TokenColor previewColor)
+    {
+        Position = position;
+        PreviewColor = previewColor;
+    }
+
+    /// <summary>Creates a preview token at the given position.</summary>
+    public static PreviewTokenState Create(EmptyTokenState emptyToken, TokenColor previewColor) => 
+        new(emptyToken.Position, previewColor);
 }
 
 /// <summary>
@@ -57,13 +104,11 @@ public sealed record class PlacedTokenState : TokenState
     }
 
     /// <summary>
-    /// Places a token by consuming an empty token and applying a color.
-    /// Type signature enforces:
-    /// - Input must be an EmptyTokenState (can't place twice)
-    /// - Color must be Red or Yellow (can't use None)
+    /// Places a token by consuming a preview token and applying a color.
+    /// This allows placing over a preview token that was shown during hover.
     /// </summary>
-    public static PlacedTokenState Place(EmptyTokenState empty, TokenColor color) =>
-        new(empty.Position, color);
+    public static PlacedTokenState Place(PreviewTokenState preview, TokenColor color) =>
+        new(preview.Position, color);
 }
 
 /// <summary>
@@ -78,10 +123,12 @@ public static class TokenStateExtensions
     public static TResult Match<TResult>(
         this TokenState token,
         Func<EmptyTokenState, TResult> onEmpty,
+        Func<PreviewTokenState, TResult> onPreview,
         Func<PlacedTokenState, TResult> onPlaced) =>
         token switch
         {
             EmptyTokenState empty => onEmpty(empty),
+            PreviewTokenState preview => onPreview(preview),
             PlacedTokenState placed => onPlaced(placed),
             _ => throw new InvalidOperationException($"Unknown token state type: {token.GetType()}")
         };
@@ -93,6 +140,7 @@ public static class TokenStateExtensions
     public static void Match(
         this TokenState token,
         Action<EmptyTokenState> onEmpty,
+        Action<PreviewTokenState> onPreview,
         Action<PlacedTokenState> onPlaced)
     {
         switch (token)
@@ -100,7 +148,10 @@ public static class TokenStateExtensions
             case EmptyTokenState empty:
                 onEmpty(empty);
                 break;
-            case PlacedTokenState placed:
+            case PreviewTokenState preview:
+                onPreview(preview);
+                break;
+            case PlacedTokenState placed:   
                 onPlaced(placed);
                 break;
             default:

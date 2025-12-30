@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using LanguageExt;
 
 namespace Board.Domain;
 
@@ -20,6 +22,10 @@ public abstract record BoardStateTransition();
 public sealed record SwitchPlayer() : BoardStateTransition;
 
 public sealed record PlaceToken(TokenColumn Column) : BoardStateTransition;
+
+public sealed record PlacePreviewToken(TokenColumn Column) : BoardStateTransition;
+
+public sealed record ClearPreviewToken(TokenColumn Column) : BoardStateTransition;
 
 
 public static class BoardConstants
@@ -131,26 +137,65 @@ public static class BoardStateExtensions
         return state.WithBoardTokenState(new BoardTokenState(newTokens));
     }
 
+    private static Option<EmptyTokenState> GetLowestEmptyTokenFromColumn(this BoardState state, TokenColumn column)
+        => state.BoardTokenState.BoardTokenLookup
+            .Where(kvp => kvp.Key.Column.ColumnIndex == column.ColumnIndex)
+            .OrderByDescending(kvp => kvp.Key.Row.RowIndex)
+            .FirstOrDefault(kvp => kvp.Value is EmptyTokenState).Value is EmptyTokenState empty ? 
+                Option<EmptyTokenState>.Some(empty) : 
+                Option<EmptyTokenState>.None;
+    
+    // FIXME: reuse code from GetLowestEmptyTokenFromColumn
+    private static Option<PreviewTokenState> GetLowestPreviewTokenFromColumn(this BoardState state, TokenColumn column)
+        => state.BoardTokenState.BoardTokenLookup
+            .Where(kvp => kvp.Key.Column.ColumnIndex == column.ColumnIndex)
+            .OrderByDescending(kvp => kvp.Key.Row.RowIndex)
+            .FirstOrDefault(kvp => kvp.Value is PreviewTokenState).Value is PreviewTokenState preview ? 
+                Option<PreviewTokenState>.Some(preview) : 
+                Option<PreviewTokenState>.None;
+
     /// <summary>
-    /// Places a token in the specified column, filling the lowest available empty position.
+    /// Places a token in the specified column, filling the lowest available preview position.
     /// Uses the provided coloring strategy to determine the token color.
     /// </summary>
     private static BoardState PlaceTokenInColumn(this BoardState state, TokenColumn column, ColoringStrategy coloringStrategy)
     {
         var color = coloringStrategy(state.CurrentPlayer);
         
-        var emptyToken = state.BoardTokenState.BoardTokenLookup
-            .Where(kvp => kvp.Key.Column.ColumnIndex == column.ColumnIndex)
-            .OrderByDescending(kvp => kvp.Key.Row.RowIndex)
-            .FirstOrDefault(kvp => kvp.Value is EmptyTokenState);
+        // First check if there's a preview token (from hovering)
+        var maybePreviewToken = state.GetLowestPreviewTokenFromColumn(column);
+        return maybePreviewToken.Match(
+            None: () => state,
+            Some: previewToken => state.UpdateTokenAtPosition(previewToken.Position, _ => PlacedTokenState.Place(previewToken, color)));
 
-        if (emptyToken.Value is EmptyTokenState empty)
-        {
-            return state.UpdateTokenAtPosition(emptyToken.Key, _ => PlacedTokenState.Place(empty, color));
-        }
+        // Otherwise, find the lowest empty token
+        // var maybeEmptyToken = state.GetLowestEmptyTokenFromColumn(column);
+        // return maybeEmptyToken.Match(
+        //     // Column is full, return state unchanged
+        //     None: () => state,
+        //     Some: emptyToken => state.UpdateTokenAtPosition(emptyToken.Position, _ => PlacedTokenState.Place(emptyToken, color)));
+    }
 
-        // Column is full, return state unchanged
-        return state;
+    private static BoardState PlacePreviewTokenInColumn(this BoardState state, TokenColumn column, ColoringStrategy coloringStrategy)
+    {
+        var color = coloringStrategy(state.CurrentPlayer);
+        
+        var maybeEmptyToken = state.GetLowestEmptyTokenFromColumn(column);
+
+        return maybeEmptyToken.Match(
+            // Column is full, return state unchanged
+            None: () => state,
+            Some: emptyToken => state.UpdateTokenAtPosition(emptyToken.Position, _ => PreviewTokenState.Create(emptyToken, color)));
+    }
+
+    private static BoardState ClearPreviewTokenFromColumn(this BoardState state, TokenColumn column)
+    {
+        var maybePreviewToken = state.GetLowestPreviewTokenFromColumn(column);
+
+        return maybePreviewToken.Match(
+            // Column is full, return state unchanged
+            None: () => state,
+            Some: previewToken => state.UpdateTokenAtPosition(previewToken.Position, _ => EmptyTokenState.Create(previewToken)));
     }
 
     /// <summary>
@@ -161,6 +206,8 @@ public static class BoardStateExtensions
         => transition switch
         {
             PlaceToken placeToken => state.PlaceTokenInColumn(placeToken.Column, state.ColoringStrategy),
+            PlacePreviewToken previewToken => state.PlacePreviewTokenInColumn(previewToken.Column, state.ColoringStrategy),
+            ClearPreviewToken clearPreviewToken => state.ClearPreviewTokenFromColumn(clearPreviewToken.Column),
             SwitchPlayer => state.WithCurrentPlayer(BoardState.AdvancePlayer()),
             _ => throw new InvalidOperationException($"Unknown transition type: {transition.GetType()}")
         };

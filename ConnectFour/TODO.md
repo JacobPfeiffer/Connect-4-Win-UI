@@ -7,3 +7,4 @@
 3. Add SQL database to store state
 4. Allow users to save an restore named games.
 5. Add a tournament feature with a scoreboard.
+6. Add actual game logic to check for a winner.
