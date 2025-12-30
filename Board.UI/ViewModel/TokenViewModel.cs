@@ -17,7 +17,7 @@ public sealed partial class TokenViewModel : ReactiveObject
     /// Creates a TokenViewModel with initial state and subscribes to updates from the observable.
     /// Accepts any TokenState to support restoring games with placed tokens.
     /// </summary>
-    public TokenViewModel(TokenPosition position, IObservable<TokenState> tokenObservable, TokenColorToBrushConverter tokenColorToBrush)
+    public TokenViewModel(TokenPosition position, IObservable<TokenState> tokenObservable, TokenStateToBrushConverter tokenColorToBrush)
     {
         Position = position;
 

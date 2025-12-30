@@ -35,8 +35,10 @@
             Grid.Row ="1" 
             Grid.ColumnSpan="7"
             FontSize="18"
-            HorizontalAlignment="Center"
-            Text="{Binding ActivePlayerString}"/>
+            HorizontalAlignment="Center">
+            <Run Text="Your turn: " Foreground="White"/>
+            <Run Text="{Binding ActivePlayerString}" Foreground="{Binding ActivePlayerStringColor}"/>
+        </TextBlock>
 
         <Border 
             Grid.Row="2"

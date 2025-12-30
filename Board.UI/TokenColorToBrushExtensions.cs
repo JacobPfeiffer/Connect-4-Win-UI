@@ -4,7 +4,8 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Board.UI;
 
-public delegate SolidColorBrush TokenColorToBrushConverter(TokenState tokenState);
+public delegate SolidColorBrush TokenStateToBrushConverter(TokenState tokenState);
+public delegate SolidColorBrush TokenColorToBrushConverter(TokenColor tokenColor);
 
 public static class TokenColorToBrushExtensions
 {
@@ -17,12 +18,7 @@ public static class TokenColorToBrushExtensions
     private static readonly SolidColorBrush RedPreviewBrush = new(Windows.UI.Color.FromArgb(153, 255, 0, 0));
 
     private static SolidColorBrush GetPlacedBrushForTokenState(this PlacedTokenState tokenState)
-        => tokenState.Color switch
-        {
-            TokenColor.Yellow => YellowBrush,
-            TokenColor.Red => RedBrush,
-            _ => throw new NotImplementedException(),
-        };
+        => tokenState.Color.ConvertFromTokenColorToBrush();
 
     private static SolidColorBrush GetPreviewBrushForTokenState(this PreviewTokenState tokenState)
         => tokenState.PreviewColor switch
@@ -34,6 +30,14 @@ public static class TokenColorToBrushExtensions
 
     private static SolidColorBrush GetEmptyBrushForTokenState()
         => WhiteBrush;
+
+    public static SolidColorBrush ConvertFromTokenColorToBrush(this TokenColor tokenColor)
+        => tokenColor switch
+        {
+            TokenColor.Yellow => YellowBrush,
+            TokenColor.Red => RedBrush,
+            _ => throw new NotImplementedException(),
+        };
 
     public static SolidColorBrush GetBrushForTokenState(this TokenState tokenState) =>
         tokenState.Match(
