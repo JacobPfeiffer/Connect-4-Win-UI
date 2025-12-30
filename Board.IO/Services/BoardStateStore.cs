@@ -120,11 +120,13 @@ public sealed class BoardStateStore : IDisposable
             .DistinctUntilChanged(state => state.CurrentPlayer)
             .Select(state => state.CurrentPlayer);
 
+    // FIXME: This could also just be TakeUntil state is placed
     /// <summary>
     /// Gets an observable that emits token state changes for a specific position.
-    /// Emits at most twice:
-    /// - If initial state is Placed: emits once (the placed state)
-    /// - If initial state is Empty: emits twice (empty state first, then when it transitions to placed)
+    /// Emits state changes for empty, preview, and placed states.
+    /// - Empty: emitted when token position is empty
+    /// - Preview: emitted when a preview token is shown (doesn't complete the observable)
+    /// - Placed: emitted when a token is placed (completes the observable)
     /// </summary>
     public IObservable<TokenState> GetTokenObservable(TokenPosition position)
         => Observable.Create<TokenState>(observable =>
@@ -138,6 +140,10 @@ public sealed class BoardStateStore : IDisposable
                      onEmpty: empty =>
                      {
                         observable.OnNext(empty);
+                     },
+                     onPreview: preview =>
+                     {
+                        observable.OnNext(preview);
                      },
                      onPlaced: placed =>
                      {

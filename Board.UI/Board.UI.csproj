@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
     <PackageReference Include="ReactiveUI" Version="22.3.1" />
     <PackageReference Include="ReactiveUI.WinUI" Version="22.3.1" />
   </ItemGroup>

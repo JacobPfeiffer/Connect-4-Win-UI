@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using Board.Domain;
 using Board.IO.Services;
+using Board.UI;
 using Board.UI.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -13,7 +14,7 @@ namespace ConnectFour;
 public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
-    private Window? _window;
+    private ConnectFourWindow? _window;
 
     /// <summary>
     /// Initializes the singleton application object.
@@ -39,9 +40,12 @@ public partial class App : Application
 
     private void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton(ColoringStrategies.Player1Red);
+        services.AddSingleton<TokenColorToBrushConverter>(TokenColorToBrushExtensions.GetBrushForTokenState);
+
         // Register the BoardStateStore as singleton with coloring strategy
         services.AddSingleton<BoardStateStore>(sp =>
-            new BoardStateStore(BoardState.CreateCleanBoard(ColoringStrategies.Player1Red)));
+            new BoardStateStore(BoardState.CreateCleanBoard(sp.GetRequiredService<ColoringStrategy>())));
 
         // Register the BoardStateStoreService from the store
         services.AddSingleton<BoardStateStoreService>(sp =>
@@ -59,14 +63,25 @@ public partial class App : Application
                                     kvp.Value.Select(token => 
                                         new TokenViewModel(
                                             token.Key, 
-                                            sp.GetRequiredService<BoardStateStoreService>().GetTokenObservable(token.Key)))), 
+                                            sp.GetRequiredService<BoardStateStoreService>().GetTokenObservable(token.Key),
+                                            sp.GetRequiredService<TokenColorToBrushConverter>()))), 
                                 kvp.Key, 
                                 sp.GetRequiredService<BoardStateStoreService>().ColumnFullObservable(kvp.Key),
-                                columnViewModel => 
+                                tokenColumn => 
                                 {
                                     sp.GetRequiredService<BoardStateStoreService>().UpdateBoardStateBatch(
-                                        new PlaceToken(columnViewModel.Column),
+                                        new PlaceToken(tokenColumn),
                                         new SwitchPlayer());
+                                },
+                                previewTokenColumn =>
+                                {
+                                    sp.GetRequiredService<BoardStateStoreService>().UpdateBoardState(
+                                        new PlacePreviewToken(previewTokenColumn));
+                                },
+                                previewTokenColumn =>
+                                {
+                                    sp.GetRequiredService<BoardStateStoreService>().UpdateBoardState(
+                                        new ClearPreviewToken(previewTokenColumn));
                                 }))),
             sp.GetRequiredService<BoardStateStoreService>().PlayerChanged));
 
