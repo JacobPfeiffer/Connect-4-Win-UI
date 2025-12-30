@@ -41,7 +41,8 @@ public partial class App : Application
     private void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton(ColoringStrategies.Player1Red);
-        services.AddSingleton<TokenColorToBrushConverter>(TokenColorToBrushExtensions.GetBrushForTokenState);
+        services.AddSingleton<TokenStateToBrushConverter>(TokenColorToBrushExtensions.GetBrushForTokenState);
+        services.AddSingleton<TokenColorToBrushConverter>(TokenColorToBrushExtensions.ConvertFromTokenColorToBrush);
 
         // Register the BoardStateStore as singleton with coloring strategy
         services.AddSingleton<BoardStateStore>(sp =>
@@ -64,7 +65,7 @@ public partial class App : Application
                                         new TokenViewModel(
                                             token.Key, 
                                             sp.GetRequiredService<BoardStateStoreService>().GetTokenObservable(token.Key),
-                                            sp.GetRequiredService<TokenColorToBrushConverter>()))), 
+                                            sp.GetRequiredService<TokenStateToBrushConverter>()))), 
                                 kvp.Key, 
                                 sp.GetRequiredService<BoardStateStoreService>().ColumnFullObservable(kvp.Key),
                                 tokenColumn => 
@@ -83,7 +84,9 @@ public partial class App : Application
                                     sp.GetRequiredService<BoardStateStoreService>().UpdateBoardState(
                                         new ClearPreviewToken(previewTokenColumn));
                                 }))),
-            sp.GetRequiredService<BoardStateStoreService>().PlayerChanged));
+            sp.GetRequiredService<BoardStateStoreService>().PlayerChanged,
+            sp.GetRequiredService<ColoringStrategy>(),
+            sp.GetRequiredService<TokenColorToBrushConverter>()));
 
         services.AddTransient<ConnectFourWindow>();
     }
