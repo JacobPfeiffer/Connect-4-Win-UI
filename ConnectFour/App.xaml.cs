@@ -68,6 +68,7 @@ public partial class App : Application
                                             sp.GetRequiredService<TokenStateToBrushConverter>()))), 
                                 kvp.Key, 
                                 sp.GetRequiredService<BoardStateStoreService>().ColumnFullObservable(kvp.Key),
+                                sp.GetRequiredService<BoardStateStoreService>().GameStatus,
                                 tokenColumn => 
                                 {
                                     sp.GetRequiredService<BoardStateStoreService>().UpdateBoardStateBatch(
@@ -85,6 +86,7 @@ public partial class App : Application
                                         new ClearPreviewToken(previewTokenColumn));
                                 }))),
             sp.GetRequiredService<BoardStateStoreService>().PlayerChanged,
+            sp.GetRequiredService<BoardStateStoreService>().GameStatus,
             sp.GetRequiredService<ColoringStrategy>(),
             sp.GetRequiredService<TokenColorToBrushConverter>()));
 

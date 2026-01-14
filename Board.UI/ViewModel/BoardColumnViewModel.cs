@@ -40,6 +40,7 @@ public sealed partial class BoardColumnViewModel : ReactiveObject, IDisposable
         ObservableCollection<TokenViewModel> tokensInColumn, 
         TokenColumn column, 
         IObservable<Unit> columnFull, 
+        IObservable<GameStatus> gameStatus,
         Action<TokenColumn> placeToken,
         Action<TokenColumn> previewTokenPlacement,
         Action<TokenColumn> clearTokenPreview)
@@ -48,16 +49,19 @@ public sealed partial class BoardColumnViewModel : ReactiveObject, IDisposable
         _canPlaceInColumn = columnFull
             .Select(_ => false)
             .StartWith(true)
+            .Merge(gameStatus.Where(status => status is Won || status is Draw).Select(_ => false))
             .ToProperty(this, bcf => bcf.CanPlaceInColumn, initialValue: true, scheduler: RxApp.MainThreadScheduler);
 
         Column = column;
         TokensInColumn = tokensInColumn;
+        // TODO: set up command canExecute based by checking if column is full or game is over
         PlaceTokenCommand = ReactiveCommand.Create(
             () => placeToken(Column),
             outputScheduler: RxApp.MainThreadScheduler);
 
         // Set up preview token behavior and store subscription for disposal
         PreviewTokenPlacementOnHover(previewTokenPlacement, clearTokenPreview)
+            .TakeUntil(gameStatus.Where(status => status is Won || status is Draw))
             .Subscribe()
             .DisposeWith(_disposables);
         
