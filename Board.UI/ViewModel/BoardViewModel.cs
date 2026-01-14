@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using Board.Domain;
+using LanguageExt.Pretty;
 using Microsoft.UI.Xaml.Media;
 using ReactiveUI;
 
@@ -22,7 +24,12 @@ public sealed partial class BoardViewModel : ReactiveObject
     public Brush ActivePlayerStringColor => _activePlayerStringColor.Value;
 
 
-    public BoardViewModel(ObservableCollection<BoardColumnViewModel> boardColumns, IObservable<Player> activePlayerObservable, ColoringStrategy coloringStrategy, TokenColorToBrushConverter tokenColorToBrush)
+    public BoardViewModel(
+        ObservableCollection<BoardColumnViewModel> boardColumns, 
+        IObservable<Player> activePlayerObservable, 
+        IObservable<GameStatus> gameStatusObservable,
+        ColoringStrategy coloringStrategy, 
+        TokenColorToBrushConverter tokenColorToBrush)
     {
         BoardColumns = boardColumns;
 
@@ -40,6 +47,18 @@ public sealed partial class BoardViewModel : ReactiveObject
         _activePlayerStringColor = activePlayerObservable
             .Select(activePlayer => tokenColorToBrush(coloringStrategy(activePlayer)))
             .ToProperty(this, x => x.ActivePlayerStringColor, scheduler: RxApp.MainThreadScheduler);
+
+        _ = gameStatusObservable
+            .Do(status => Debug.WriteLine($"🔔 GameStatus observable emitted: {status}"))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(status =>
+            {
+                Console.WriteLine($"Game Status Changed: {status}");
+                if(status is Won wonStatus)
+                {
+                    Console.WriteLine($"Game Over! {wonStatus.Winner} wins with color {wonStatus.WinningColor}!");
+                }
+            });
     }
 
 }

@@ -35,6 +35,7 @@ public delegate IObservable<Unit> ColumnFullObservable(TokenColumn column);
 public record BoardStateStoreService(
     IObservable<BoardState> StateChanged,
     IObservable<Player> PlayerChanged,
+    IObservable<GameStatus> GameStatus,
     GetBoardStateDelegate GetBoardState,
     UpdateBoardStateDelegate UpdateBoardState,
     UpdateBoardStateBatchDelegate UpdateBoardStateBatch,
@@ -72,6 +73,7 @@ public sealed class BoardStateStore : IDisposable
     public BoardStateStoreService GetService() => new(
         StateChanged: _stateSubject.AsObservable(),
         PlayerChanged: PlayerChanged,
+        GameStatus: GameStatusOverTime,
         GetBoardState: GetCurrentState,
         UpdateBoardState: UpdateBoardState,
         UpdateBoardStateBatch: UpdateBoardStateBatch,
@@ -119,6 +121,11 @@ public sealed class BoardStateStore : IDisposable
         _stateSubject
             .DistinctUntilChanged(state => state.CurrentPlayer)
             .Select(state => state.CurrentPlayer);
+
+    public IObservable<GameStatus> GameStatusOverTime =>
+        _stateSubject
+            .DistinctUntilChanged(state => state.CurrentGameStatus)
+            .Select(state => state.CurrentGameStatus);
 
     // FIXME: This could also just be TakeUntil state is placed
     /// <summary>
